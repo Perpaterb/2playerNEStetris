@@ -215,13 +215,12 @@ const audio = new Audio_();
 // KEY BINDINGS
 // =============================================================================
 
-// P1 (left): WASD + Q/E for rotation
-// P2 (right): Arrows + Z/X for rotation
 // P1 (left in 2P): WASD + LeftShift for rotate CCW, W for rotate CW
 // P2 (right in 2P) / 1P: Arrows + N for rotate CCW, Up for rotate CW
+// Letter keys use e.key (respects keyboard layout), special keys use e.code
 const BINDS = [
-    { left:'KeyA', right:'KeyD', down:'KeyS', rotateCW:'KeyW', rotateCCW:'ShiftLeft' },
-    { left:'ArrowLeft', right:'ArrowRight', down:'ArrowDown', rotateCW:'ArrowUp', rotateCCW:'KeyN' }
+    { left:'key_a', right:'key_d', down:'key_s', rotateCW:'key_w', rotateCCW:'Shift' },
+    { left:'ArrowLeft', right:'ArrowRight', down:'ArrowDown', rotateCW:'ArrowUp', rotateCCW:'key_n' }
 ];
 
 // =============================================================================
@@ -367,8 +366,18 @@ let frame = 0;
 
 const keys = {}, prevKeys = {};
 
-document.addEventListener('keydown', e => { keys[e.code]=true; audio.init(); e.preventDefault(); });
-document.addEventListener('keyup', e => { keys[e.code]=false; e.preventDefault(); });
+// Store keys by e.code (for arrows, Enter, Space, Escape)
+// AND by 'key_' + lowercase e.key (for letters, respects keyboard layout)
+// AND by e.key (for Shift, etc.)
+function keyId(e) {
+    const ids = [e.code];
+    if (e.key.length === 1) ids.push('key_' + e.key.toLowerCase());
+    else ids.push(e.key); // 'Shift', 'Enter', etc.
+    return ids;
+}
+
+document.addEventListener('keydown', e => { for(const id of keyId(e)) keys[id]=true; audio.init(); e.preventDefault(); });
+document.addEventListener('keyup', e => { for(const id of keyId(e)) keys[id]=false; e.preventDefault(); });
 function pressed(c) { return keys[c] && !prevKeys[c]; }
 function held(c) { return !!keys[c]; }
 
@@ -572,24 +581,24 @@ function update() {
 
     switch (menuState) {
         case MENU.PLAYER_SELECT:
-            if (pressed('ArrowUp') || pressed('ArrowDown') || pressed('KeyW') || pressed('KeyS')) {
+            if (pressed('ArrowUp') || pressed('ArrowDown') || pressed('key_w') || pressed('key_s')) {
                 menuCursor = menuCursor === 0 ? 1 : 0;
                 audio.sfx('select');
             }
             if (pressed('Enter') || pressed('Space')) {
                 numPlayers = menuCursor + 1;
                 setCanvasSize();
-                menuCursor = 0; // reset for level select
+                menuCursor = 0;
                 menuState = MENU.LEVEL_SELECT;
                 audio.sfx('select');
             }
             break;
 
         case MENU.LEVEL_SELECT:
-            if (pressed('ArrowRight') || pressed('KeyD')) { menuCursor = Math.min(menuCursor+1, 9); audio.sfx('select'); }
-            if (pressed('ArrowLeft') || pressed('KeyA'))  { menuCursor = Math.max(menuCursor-1, 0); audio.sfx('select'); }
-            if (pressed('ArrowDown') || pressed('KeyS'))  { if(menuCursor+5<=9) menuCursor+=5; audio.sfx('select'); }
-            if (pressed('ArrowUp') || pressed('KeyW'))    { if(menuCursor-5>=0) menuCursor-=5; audio.sfx('select'); }
+            if (pressed('ArrowRight') || pressed('key_d')) { menuCursor = Math.min(menuCursor+1, 9); audio.sfx('select'); }
+            if (pressed('ArrowLeft') || pressed('key_a'))  { menuCursor = Math.max(menuCursor-1, 0); audio.sfx('select'); }
+            if (pressed('ArrowDown') || pressed('key_s'))  { if(menuCursor+5<=9) menuCursor+=5; audio.sfx('select'); }
+            if (pressed('ArrowUp') || pressed('key_w'))    { if(menuCursor-5>=0) menuCursor-=5; audio.sfx('select'); }
             if (pressed('Enter') || pressed('Space')) startGame(menuCursor);
             break;
 
